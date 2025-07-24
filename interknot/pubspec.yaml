@@ -1,7 +1,7 @@
 name: interknot
-description: "A new Flutter project."
+description: "Unified Proxy App"
 publish_to: 'none'
-version: 0.1.0
+version: 0.0.1
 
 environment:
   sdk: ^3.8.1
@@ -14,6 +14,21 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  adaptive_theme: ^3.7.0
+  cupertino_icons: ^1.0.8
+  flutter_local_notifications: ^19.3.1
+  android_alarm_manager_plus: ^4.0.7
+  webview_flutter: ^4.13.0
+  just_audio: ^0.10.4
+  audio_service: ^0.18.18
+  path_provider: ^2.1.1
+  permission_handler: ^12.0.1
+  shared_preferences: ^2.5.3
+  sqflite: ^2.4.2
+  file_picker: ^10.2.0
+  http: ^1.4.0
+  provider: ^6.1.5
+  url_launcher: ^6.3.2
 
 flutter:
   uses-material-design: true
