@@ -1,7 +1,7 @@
 name: interknot
-description: "A new Flutter project."
+description: "Unified Proxy Network"
 publish_to: 'none'
-version: 0.1.0
+version: 0.0.1
 
 environment:
   sdk: ^3.8.1
@@ -9,6 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  android_alarm_manager_plus: ^3.0.1
+  flutter_inappwebview: ^6.0.0
+  just_audio: ^0.9.34
+  file_picker: ^6.1.1
 
 dev_dependencies:
   flutter_test:
