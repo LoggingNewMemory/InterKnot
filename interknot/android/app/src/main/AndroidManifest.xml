@@ -2,7 +2,7 @@
     <application
         android:label="Inter-Knot"
         android:name="${applicationName}"
-        android:icon="@mipmap/logo.png">
+        android:icon="@mipmap/logo">
         <activity
             android:name=".MainActivity"
             android:exported="true"
