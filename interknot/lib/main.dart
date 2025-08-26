@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Import for system UI services
+import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // Import the icon package
 import 'package:intl/intl.dart';
 
-// The main function is now async to allow for system UI settings
 Future<void> main() async {
-  // Ensure that widget binding is initialized before running the app
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Set the app to run in immersive sticky fullscreen mode
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
   runApp(const MainApp());
 }
 
@@ -22,12 +18,9 @@ class MainApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Inter-Knot',
       theme: ThemeData(
-        // Set the default font family to Gilmer
         fontFamily: 'Gilmer',
-        // Define a dark theme to match the design
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.black,
-        // Customize text themes for different weights
         textTheme: const TextTheme(
           headlineLarge: TextStyle(
               fontSize: 34.0, fontWeight: FontWeight.w700, color: Colors.white),
@@ -38,7 +31,6 @@ class MainApp extends StatelessWidget {
           labelMedium: TextStyle(
               fontSize: 16.0, fontWeight: FontWeight.w500, color: Colors.white),
         ),
-        // Style for the Floating Action Button
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -56,14 +48,12 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // The main layout is a Row: SideNav on the left, MainContent on the right
       body: Row(
         children: [
-          _SideNavBar(), // Left-side navigation bar
-          // A thin vertical line to separate the sections
+          _SideNavBar(),
           VerticalDivider(width: 1, color: Colors.grey[850]),
           const Expanded(
-            child: _MainContent(), // Main content area
+            child: _MainContent(),
           ),
         ],
       ),
@@ -82,22 +72,22 @@ class _SideNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 70, // Set a fixed width for the nav bar
+      width: 70,
       padding: const EdgeInsets.symmetric(vertical: 20.0),
       child: Column(
         children: [
-          // Top icon (Custom Image)
           _buildNavIcon(icon: Icons.account_circle, onPressed: () {}),
           const SizedBox(height: 20),
-          // Middle icons for apps
+          // --- UPDATED ICONS ---
           _buildNavIcon(
-              icon: Icons.business_center,
+              icon: FontAwesomeIcons.whatsapp,
               onPressed: () {}), // WhatsApp Business
-          _buildNavIcon(icon: Icons.telegram, onPressed: () {}), // Telegram
-          _buildNavIcon(icon: Icons.chat_bubble, onPressed: () {}), // WhatsApp
-          _buildNavIcon(icon: Icons.music_note, onPressed: () {}), // Music
-          const Spacer(), // Pushes the settings icon to the bottom
-          // Bottom icon (Settings)
+          _buildNavIcon(icon: Icons.telegram, onPressed: () {}),
+          _buildNavIcon(
+              icon: FontAwesomeIcons.whatsapp, onPressed: () {}), // WhatsApp
+          // --- END OF UPDATE ---
+          _buildNavIcon(icon: Icons.music_note, onPressed: () {}),
+          const Spacer(),
           _buildNavIcon(icon: Icons.settings, onPressed: () {}),
         ],
       ),
@@ -113,7 +103,9 @@ class _SideNavBar extends StatelessWidget {
         radius: 25,
         backgroundColor: Colors.grey[900],
         child: IconButton(
-          icon: Icon(icon),
+          // Using FaIcon for FontAwesome icons works seamlessly here
+          // as it's a widget, but Icon(icon) is more generic.
+          icon: Icon(icon, size: 22),
           color: Colors.white70,
           onPressed: onPressed,
         ),
@@ -128,7 +120,6 @@ class _MainContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get the current date and format it as shown in the UI
     final String formattedDate =
         DateFormat('dd / MMM / yyyy').format(DateTime.now());
     final textTheme = Theme.of(context).textTheme;
@@ -138,7 +129,6 @@ class _MainContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Text
           Text(
             'Welcome to',
             style:
@@ -150,15 +140,11 @@ class _MainContent extends StatelessWidget {
           ),
           const Divider(
               color: Colors.white, thickness: 1.5, endIndent: 50, height: 20),
-
-          // Date Text
           Text(
             'The Day is $formattedDate',
             style: textTheme.bodyMedium,
           ),
           const SizedBox(height: 40),
-
-          // Task Card
           _TaskCard(),
         ],
       ),
@@ -175,14 +161,12 @@ class _TaskCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        // A subtle border to define the card area
         border: Border.all(color: Colors.grey[800]!),
         borderRadius: BorderRadius.circular(8),
       ),
       child: IntrinsicHeight(
         child: Row(
           children: [
-            // Left side with task details
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,7 +182,6 @@ class _TaskCard extends StatelessWidget {
               ),
             ),
             VerticalDivider(color: Colors.grey[800]!, thickness: 1),
-            // Right side with action icons
             Padding(
               padding: const EdgeInsets.only(left: 12.0),
               child: Column(
