@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // Import the icon package
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'settings.dart'; // Import the new settings page
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +26,10 @@ class MainApp extends StatelessWidget {
         textTheme: const TextTheme(
           headlineLarge: TextStyle(
               fontSize: 34.0, fontWeight: FontWeight.w700, color: Colors.white),
+          headlineSmall: TextStyle(
+              fontSize: 24.0, fontWeight: FontWeight.w500, color: Colors.white),
+          titleLarge: TextStyle(
+              fontSize: 20.0, fontWeight: FontWeight.w500, color: Colors.white),
           bodyMedium: TextStyle(
               fontSize: 16.0,
               fontWeight: FontWeight.w400,
@@ -42,18 +48,57 @@ class MainApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
+// Converted to a StatefulWidget to manage the username state
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String _username = 'Proxy'; // Default username
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername(); // Load the username when the widget is first created
+  }
+
+  // Method to load the username from shared preferences
+  Future<void> _loadUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Use mounted check to avoid calling setState on a disposed widget
+    if (mounted) {
+      setState(() {
+        _username = prefs.getString('username') ?? 'Proxy';
+      });
+    }
+  }
+
+  // Method to navigate to the settings page and wait for a result
+  void _navigateToSettings() async {
+    // Await the push so the code below only runs after the user returns
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsPage()),
+    );
+
+    // Always reload the username after returning from the settings page
+    _loadUsername();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
         children: [
-          _SideNavBar(),
+          // Pass the navigation callback to the SideNavBar
+          _SideNavBar(onSettingsTap: _navigateToSettings),
           VerticalDivider(width: 1, color: Colors.grey[850]),
-          const Expanded(
-            child: _MainContent(),
+          Expanded(
+            // Pass the current username to the MainContent
+            child: _MainContent(username: _username),
           ),
         ],
       ),
@@ -67,8 +112,11 @@ class HomePage extends StatelessWidget {
   }
 }
 
-/// A widget for the left-side navigation bar
 class _SideNavBar extends StatelessWidget {
+  final VoidCallback onSettingsTap; // Callback for when settings is tapped
+
+  const _SideNavBar({required this.onSettingsTap});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -78,23 +126,18 @@ class _SideNavBar extends StatelessWidget {
         children: [
           _buildNavIcon(icon: Icons.account_circle, onPressed: () {}),
           const SizedBox(height: 20),
-          // --- UPDATED ICONS ---
-          _buildNavIcon(
-              icon: FontAwesomeIcons.whatsapp,
-              onPressed: () {}), // WhatsApp Business
+          _buildNavIcon(icon: FontAwesomeIcons.whatsapp, onPressed: () {}),
           _buildNavIcon(icon: Icons.telegram, onPressed: () {}),
-          _buildNavIcon(
-              icon: FontAwesomeIcons.whatsapp, onPressed: () {}), // WhatsApp
-          // --- END OF UPDATE ---
+          _buildNavIcon(icon: FontAwesomeIcons.whatsapp, onPressed: () {}),
           _buildNavIcon(icon: Icons.music_note, onPressed: () {}),
           const Spacer(),
-          _buildNavIcon(icon: Icons.settings, onPressed: () {}),
+          // Use the callback here
+          _buildNavIcon(icon: Icons.settings, onPressed: onSettingsTap),
         ],
       ),
     );
   }
 
-  /// Helper method to create a styled circular icon button
   Widget _buildNavIcon(
       {required IconData icon, required VoidCallback onPressed}) {
     return Padding(
@@ -103,8 +146,6 @@ class _SideNavBar extends StatelessWidget {
         radius: 25,
         backgroundColor: Colors.grey[900],
         child: IconButton(
-          // Using FaIcon for FontAwesome icons works seamlessly here
-          // as it's a widget, but Icon(icon) is more generic.
           icon: Icon(icon, size: 22),
           color: Colors.white70,
           onPressed: onPressed,
@@ -114,9 +155,10 @@ class _SideNavBar extends StatelessWidget {
   }
 }
 
-/// A widget for the main content on the right
 class _MainContent extends StatelessWidget {
-  const _MainContent();
+  final String username; // Accept the username as a parameter
+
+  const _MainContent({required this.username});
 
   @override
   Widget build(BuildContext context) {
@@ -134,8 +176,9 @@ class _MainContent extends StatelessWidget {
             style:
                 textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w400),
           ),
+          // Display the dynamic username
           Text(
-            'Inter-Knot, Proxy',
+            'Inter-Knot, $username',
             style: textTheme.headlineLarge,
           ),
           const Divider(
@@ -152,7 +195,6 @@ class _MainContent extends StatelessWidget {
   }
 }
 
-/// A widget representing the task card from the UI
 class _TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
