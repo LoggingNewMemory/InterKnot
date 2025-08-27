@@ -2,13 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import 'settings.dart';
 import 'tasker.dart';
-import 'webclient.dart'; // Import the new webclient file
+import 'webclient.dart'; // Import the refactored webclient file
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,6 +54,13 @@ class MainApp extends StatelessWidget {
   }
 }
 
+// Helper class to store web client arguments
+class WebClientArgs {
+  final String title;
+  final String url;
+  WebClientArgs({required this.title, required this.url});
+}
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -66,13 +74,17 @@ class _HomePageState extends State<HomePage>
   String? _avatarPath;
   late AnimationController _animationController;
   final double _sidebarWidth = 71.0;
-  final List<Task> _tasks = []; // List to hold the tasks
+  final List<Task> _tasks = [];
+
+  // --- State for managing the main content view ---
+  WebClientArgs? _activeWebClient;
+  InAppWebViewController? _webViewController;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
-    _loadTasks(); // Load saved tasks when the app starts.
+    _loadTasks();
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
@@ -109,7 +121,19 @@ class _HomePageState extends State<HomePage>
     }
   }
 
-  // --- Navigation and State Update Logic ---
+  // --- View and Navigation Logic ---
+
+  void _showDashboard() {
+    setState(() {
+      _activeWebClient = null;
+    });
+  }
+
+  void _showWebClient(String title, String url) {
+    setState(() {
+      _activeWebClient = WebClientArgs(title: title, url: url);
+    });
+  }
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -122,6 +146,8 @@ class _HomePageState extends State<HomePage>
   }
 
   void _navigateToSettings() async {
+    // Return to dashboard view before navigating away
+    _showDashboard();
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const SettingsPage()),
@@ -150,12 +176,19 @@ class _HomePageState extends State<HomePage>
     _saveTasks();
   }
 
-  // NEW: Deletes a task from the list.
   void _deleteTask(int index) {
     setState(() {
       _tasks.removeAt(index);
     });
-    _saveTasks(); // Save the list after deleting a task.
+    _saveTasks();
+  }
+
+  void _toggleSidebar() {
+    if (_animationController.isCompleted) {
+      _animationController.reverse();
+    } else {
+      _animationController.forward();
+    }
   }
 
   @override
@@ -180,6 +213,8 @@ class _HomePageState extends State<HomePage>
                 _SideNavBar(
                   onSettingsTap: _navigateToSettings,
                   avatarPath: _avatarPath,
+                  onHomeTap: _showDashboard,
+                  onWebClientTap: _showWebClient,
                 ),
                 VerticalDivider(width: 1, color: Colors.grey[850]),
               ],
@@ -199,11 +234,40 @@ class _HomePageState extends State<HomePage>
               child: Material(
                 elevation: 8.0,
                 color: Colors.black,
-                child: _MainContent(
-                  username: _username,
-                  tasks: _tasks,
-                  onTaskStatusChanged: _updateTaskStatus,
-                  onDelete: _deleteTask, // Pass the delete function
+                child: Scaffold(
+                  backgroundColor: Colors.black,
+                  appBar: _activeWebClient == null
+                      ? null // No AppBar on the dashboard
+                      : AppBar(
+                          title: Text(_activeWebClient!.title),
+                          backgroundColor: Colors.black,
+                          elevation: 0,
+                          leading: IconButton(
+                            icon: const Icon(Icons.menu),
+                            onPressed: _toggleSidebar,
+                          ),
+                          actions: [
+                            IconButton(
+                              icon: const Icon(Icons.refresh),
+                              onPressed: () => _webViewController?.reload(),
+                            ),
+                          ],
+                        ),
+                  body: _activeWebClient == null
+                      ? _MainContent(
+                          username: _username,
+                          tasks: _tasks,
+                          onTaskStatusChanged: _updateTaskStatus,
+                          onDelete: _deleteTask,
+                        )
+                      : WebClientView(
+                          // Use a ValueKey to ensure the widget state is reset when the URL changes
+                          key: ValueKey(_activeWebClient!.url),
+                          url: _activeWebClient!.url,
+                          onWebViewCreated: (controller) {
+                            _webViewController = controller;
+                          },
+                        ),
                 ),
               ),
             ),
@@ -221,10 +285,14 @@ class _HomePageState extends State<HomePage>
 class _SideNavBar extends StatelessWidget {
   final VoidCallback onSettingsTap;
   final String? avatarPath;
+  final VoidCallback onHomeTap;
+  final Function(String, String) onWebClientTap;
 
   const _SideNavBar({
     required this.onSettingsTap,
     this.avatarPath,
+    required this.onHomeTap,
+    required this.onWebClientTap,
   });
 
   @override
@@ -252,31 +320,23 @@ class _SideNavBar extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _buildNavIcon(
-              icon: FontAwesomeIcons.whatsapp,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const WebClientPage(
-                      title: 'WhatsApp Web',
-                      url: 'https://web.whatsapp.com/',
-                    ),
-                  ),
-                );
-              }),
+            icon: Icons.space_dashboard_outlined,
+            onPressed: onHomeTap,
+          ),
           _buildNavIcon(
-              icon: Icons.telegram,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const WebClientPage(
-                      title: 'Telegram Web',
-                      url: 'https://web.telegram.org/',
-                    ),
-                  ),
-                );
-              }),
+            icon: FontAwesomeIcons.whatsapp,
+            onPressed: () => onWebClientTap(
+              'WhatsApp Web',
+              'https://web.whatsapp.com/',
+            ),
+          ),
+          _buildNavIcon(
+            icon: Icons.telegram,
+            onPressed: () => onWebClientTap(
+              'Telegram Web',
+              'https://web.telegram.org/',
+            ),
+          ),
           _buildNavIcon(icon: Icons.music_note, onPressed: () {}),
           const Spacer(),
           _buildNavIcon(icon: Icons.settings, onPressed: onSettingsTap),
@@ -306,13 +366,13 @@ class _MainContent extends StatelessWidget {
   final String username;
   final List<Task> tasks;
   final Function(int, bool) onTaskStatusChanged;
-  final Function(int) onDelete; // Callback for deleting a task.
+  final Function(int) onDelete;
 
   const _MainContent({
     required this.username,
     required this.tasks,
     required this.onTaskStatusChanged,
-    required this.onDelete, // Require the delete callback
+    required this.onDelete,
   });
 
   @override
@@ -329,7 +389,6 @@ class _MainContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // MODIFIED: Reduced the top padding from 40 to 24
             const SizedBox(height: 24),
             Text('Welcome to',
                 style: textTheme.headlineLarge
@@ -365,7 +424,6 @@ class _MainContent extends StatelessWidget {
                           onStatusChanged: (isCompleted) {
                             onTaskStatusChanged(index, isCompleted);
                           },
-                          // Pass a function to handle deletion.
                           onDelete: () {
                             onDelete(index);
                           },
@@ -383,7 +441,7 @@ class _MainContent extends StatelessWidget {
 class _TaskCard extends StatelessWidget {
   final Task task;
   final Function(bool) onStatusChanged;
-  final VoidCallback onDelete; // Callback to notify parent of deletion.
+  final VoidCallback onDelete;
 
   const _TaskCard({
     required this.task,
@@ -444,10 +502,9 @@ class _TaskCard extends StatelessWidget {
                             task.isCompleted ? Colors.green[400] : Colors.grey),
                     onPressed: () => onStatusChanged(true),
                   ),
-                  // NEW: Delete button added in the middle.
                   IconButton(
                     icon: Icon(Icons.delete_outline, color: Colors.grey[600]),
-                    onPressed: onDelete, // Calls the onDelete callback.
+                    onPressed: onDelete,
                   ),
                   IconButton(
                     icon: Icon(Icons.close,
@@ -465,11 +522,10 @@ class _TaskCard extends StatelessWidget {
   }
 
   Widget _buildTaskDetailRow(String label, String value, TextTheme textTheme) {
-    // MODIFIED: Reduced font size for better appearance
     const double cardFontSize = 14.0;
 
     final valueStyle = textTheme.bodyMedium?.copyWith(
-      fontSize: cardFontSize, // Apply smaller font size
+      fontSize: cardFontSize,
       decoration: (label == 'Task Name:' && task.isCompleted)
           ? TextDecoration.lineThrough
           : TextDecoration.none,
@@ -482,8 +538,7 @@ class _TaskCard extends StatelessWidget {
           SizedBox(
             width: 90,
             child: Text(label,
-                style: textTheme.labelMedium?.copyWith(
-                    fontSize: cardFontSize)), // Apply smaller font size
+                style: textTheme.labelMedium?.copyWith(fontSize: cardFontSize)),
           ),
           Expanded(
             child: Text(value, style: valueStyle),
