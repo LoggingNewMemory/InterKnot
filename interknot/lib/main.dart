@@ -278,7 +278,8 @@ class _MainContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 40),
+            // MODIFIED: Reduced the top padding from 40 to 24
+            const SizedBox(height: 24),
             Text('Welcome to',
                 style: textTheme.headlineLarge
                     ?.copyWith(fontWeight: FontWeight.w400, fontSize: 28.0)),
@@ -296,7 +297,6 @@ class _MainContent extends StatelessWidget {
             Text('The Day is $formattedDate', style: textTheme.bodyMedium),
             const SizedBox(height: 4),
             Text('The Time is $formattedTime', style: textTheme.bodyMedium),
-            const SizedBox(height: 40),
             Expanded(
               child: tasks.isEmpty
                   ? Center(
