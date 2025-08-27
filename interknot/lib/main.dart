@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import 'settings.dart';
+import 'tasker.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,6 +62,7 @@ class _HomePageState extends State<HomePage>
   String _username = 'Proxy';
   late AnimationController _animationController;
   final double _sidebarWidth = 71.0;
+  final List<Task> _tasks = []; // List to hold the tasks
 
   @override
   void initState() {
@@ -95,11 +97,18 @@ class _HomePageState extends State<HomePage>
     _loadUsername();
   }
 
-  void _toggleSidebar() {
-    if (_animationController.isCompleted) {
-      _animationController.reverse();
-    } else {
-      _animationController.forward();
+  // Function to navigate to the tasker page and add a new task
+  void _navigateToTasker() async {
+    final newTask = await Navigator.push<Task>(
+      context,
+      MaterialPageRoute(builder: (context) => const TaskerPage()),
+    );
+
+    // If a new task was created, add it to the list
+    if (newTask != null && mounted) {
+      setState(() {
+        _tasks.add(newTask);
+      });
     }
   }
 
@@ -141,16 +150,15 @@ class _HomePageState extends State<HomePage>
               child: Material(
                 elevation: 8.0,
                 color: Colors.black,
-                child: _MainContent(username: _username),
+                // Pass the list of tasks to the main content
+                child: _MainContent(username: _username, tasks: _tasks),
               ),
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Implement action to add a new task
-        },
+        onPressed: _navigateToTasker, // Updated to call the new function
         child: const Icon(Icons.add, size: 30),
       ),
     );
@@ -159,9 +167,7 @@ class _HomePageState extends State<HomePage>
 
 class _SideNavBar extends StatelessWidget {
   final VoidCallback onSettingsTap;
-
   const _SideNavBar({required this.onSettingsTap});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -201,15 +207,14 @@ class _SideNavBar extends StatelessWidget {
 
 class _MainContent extends StatelessWidget {
   final String username;
+  final List<Task> tasks; // Accept the list of tasks
 
-  const _MainContent({required this.username});
+  const _MainContent({required this.username, required this.tasks});
 
   @override
   Widget build(BuildContext context) {
-    // Get current date and time
     final now = DateTime.now();
     final String formattedDate = DateFormat('dd / MMM / yyyy').format(now);
-    // Format the current time in 24-hour format
     final String formattedTime = DateFormat('HH:mm').format(now);
     final textTheme = Theme.of(context).textTheme;
 
@@ -221,42 +226,41 @@ class _MainContent extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 40),
-            Text(
-              'Welcome to',
-              style: textTheme.headlineLarge?.copyWith(
-                fontWeight: FontWeight.w400,
-                fontSize: 28.0,
-              ),
-            ),
+            Text('Welcome to',
+                style: textTheme.headlineLarge
+                    ?.copyWith(fontWeight: FontWeight.w400, fontSize: 28.0)),
             IntrinsicWidth(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Inter-Knot, $username',
-                    style: textTheme.headlineLarge?.copyWith(
-                      fontSize: 28.0,
-                    ),
-                  ),
+                  Text('Inter-Knot, $username',
+                      style: textTheme.headlineLarge?.copyWith(fontSize: 28.0)),
                   const Divider(
-                    color: Colors.white,
-                    thickness: 1.5,
-                    height: 20,
-                  ),
+                      color: Colors.white, thickness: 1.5, height: 20),
                 ],
               ),
             ),
-            Text(
-              'The Day is $formattedDate',
-              style: textTheme.bodyMedium,
-            ),
+            Text('The Day is $formattedDate', style: textTheme.bodyMedium),
             const SizedBox(height: 4),
-            Text(
-              'The Time is $formattedTime',
-              style: textTheme.bodyMedium,
-            ),
+            Text('The Time is $formattedTime', style: textTheme.bodyMedium),
             const SizedBox(height: 40),
-            _TaskCard(),
+            // Conditionally display tasks or the "no task" message
+            Expanded(
+              child: tasks.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No task available, enjoy your day $username',
+                        style: textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: tasks.length,
+                      itemBuilder: (context, index) {
+                        return _TaskCard(task: tasks[index]);
+                      },
+                    ),
+            ),
           ],
         ),
       ),
@@ -264,12 +268,31 @@ class _MainContent extends StatelessWidget {
   }
 }
 
+// A new TaskCard widget that displays real task data
 class _TaskCard extends StatelessWidget {
+  final Task task;
+  const _TaskCard({required this.task});
+
+  // Helper to calculate time left
+  String _getTimeLeft(DateTime dueDate) {
+    final difference = dueDate.difference(DateTime.now());
+    if (difference.isNegative) {
+      return 'Overdue';
+    }
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d left';
+    }
+    if (difference.inHours > 0) {
+      return '${difference.inHours}h left';
+    }
+    return '${difference.inMinutes}m left';
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-
     return Container(
+      margin: const EdgeInsets.only(bottom: 16.0),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey[800]!),
@@ -282,13 +305,12 @@ class _TaskCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Task Name:', style: textTheme.labelMedium),
-                  const SizedBox(height: 8),
-                  Text('Due Date:', style: textTheme.labelMedium),
-                  const SizedBox(height: 8),
-                  Text('Time Left:', style: textTheme.labelMedium),
-                  const SizedBox(height: 8),
-                  Text('Priority:', style: textTheme.labelMedium),
+                  _buildTaskDetailRow('Task Name:', task.name, textTheme),
+                  _buildTaskDetailRow('Due Date:',
+                      DateFormat('dd/MM/yyyy').format(task.dueDate), textTheme),
+                  _buildTaskDetailRow(
+                      'Time Left:', _getTimeLeft(task.dueDate), textTheme),
+                  _buildTaskDetailRow('Priority:', task.priority, textTheme),
                 ],
               ),
             ),
@@ -305,6 +327,24 @@ class _TaskCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Helper widget to build a detail row to avoid repetition
+  Widget _buildTaskDetailRow(String label, String value, TextTheme textTheme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 90, // Fixed width for labels
+            child: Text(label, style: textTheme.labelMedium),
+          ),
+          Expanded(
+            child: Text(value, style: textTheme.bodyMedium),
+          ),
+        ],
       ),
     );
   }
