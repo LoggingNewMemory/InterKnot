@@ -84,23 +84,19 @@ class _HomePageState extends State<HomePage>
 
   // --- Task Persistence Logic ---
 
-  // NEW: Saves the current list of tasks to device storage.
   Future<void> _saveTasks() async {
     final prefs = await SharedPreferences.getInstance();
-    // Convert the list of Task objects into a list of JSON strings.
     final List<String> tasksAsString =
         _tasks.map((task) => jsonEncode(task.toJson())).toList();
     await prefs.setStringList('tasks', tasksAsString);
   }
 
-  // NEW: Loads tasks from device storage when the app starts.
   Future<void> _loadTasks() async {
     final prefs = await SharedPreferences.getInstance();
     final List<String>? tasksAsString = prefs.getStringList('tasks');
     if (tasksAsString != null) {
       if (mounted) {
         setState(() {
-          // Decode the JSON strings back into Task objects.
           _tasks.clear();
           _tasks.addAll(tasksAsString
               .map((taskString) => Task.fromJson(jsonDecode(taskString)))
@@ -139,7 +135,7 @@ class _HomePageState extends State<HomePage>
       setState(() {
         _tasks.add(newTask);
       });
-      _saveTasks(); // Save the list after adding a new task.
+      _saveTasks();
     }
   }
 
@@ -147,7 +143,15 @@ class _HomePageState extends State<HomePage>
     setState(() {
       _tasks[index].isCompleted = isCompleted;
     });
-    _saveTasks(); // Save the list after updating a task.
+    _saveTasks();
+  }
+
+  // NEW: Deletes a task from the list.
+  void _deleteTask(int index) {
+    setState(() {
+      _tasks.removeAt(index);
+    });
+    _saveTasks(); // Save the list after deleting a task.
   }
 
   @override
@@ -192,6 +196,7 @@ class _HomePageState extends State<HomePage>
                   username: _username,
                   tasks: _tasks,
                   onTaskStatusChanged: _updateTaskStatus,
+                  onDelete: _deleteTask, // Pass the delete function
                 ),
               ),
             ),
@@ -249,13 +254,14 @@ class _SideNavBar extends StatelessWidget {
 class _MainContent extends StatelessWidget {
   final String username;
   final List<Task> tasks;
-  // Callback function to handle status changes.
   final Function(int, bool) onTaskStatusChanged;
+  final Function(int) onDelete; // Callback for deleting a task.
 
   const _MainContent({
     required this.username,
     required this.tasks,
     required this.onTaskStatusChanged,
+    required this.onDelete, // Require the delete callback
   });
 
   @override
@@ -305,9 +311,12 @@ class _MainContent extends StatelessWidget {
                       itemBuilder: (context, index) {
                         return _TaskCard(
                           task: tasks[index],
-                          // Pass the callback to the TaskCard.
                           onStatusChanged: (isCompleted) {
                             onTaskStatusChanged(index, isCompleted);
+                          },
+                          // Pass a function to handle deletion.
+                          onDelete: () {
+                            onDelete(index);
                           },
                         );
                       },
@@ -322,12 +331,15 @@ class _MainContent extends StatelessWidget {
 
 class _TaskCard extends StatelessWidget {
   final Task task;
-  // Callback to notify the parent widget of a status change.
   final Function(bool) onStatusChanged;
+  final VoidCallback onDelete; // Callback to notify parent of deletion.
 
-  const _TaskCard({required this.task, required this.onStatusChanged});
+  const _TaskCard({
+    required this.task,
+    required this.onStatusChanged,
+    required this.onDelete,
+  });
 
-  // Helper now considers the completion status.
   String _getTimeLeft(DateTime dueDate) {
     if (task.isCompleted) return 'Completed';
 
@@ -375,14 +387,17 @@ class _TaskCard extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // This is now an IconButton to mark the task as complete.
                   IconButton(
                     icon: Icon(Icons.check,
                         color:
                             task.isCompleted ? Colors.green[400] : Colors.grey),
                     onPressed: () => onStatusChanged(true),
                   ),
-                  // This IconButton marks the task as incomplete.
+                  // NEW: Delete button added in the middle.
+                  IconButton(
+                    icon: Icon(Icons.delete_outline, color: Colors.grey[600]),
+                    onPressed: onDelete, // Calls the onDelete callback.
+                  ),
                   IconButton(
                     icon: Icon(Icons.close,
                         color:
@@ -399,8 +414,11 @@ class _TaskCard extends StatelessWidget {
   }
 
   Widget _buildTaskDetailRow(String label, String value, TextTheme textTheme) {
-    // Apply a strikethrough style if the task is complete.
+    // MODIFIED: Reduced font size for better appearance
+    const double cardFontSize = 14.0;
+
     final valueStyle = textTheme.bodyMedium?.copyWith(
+      fontSize: cardFontSize, // Apply smaller font size
       decoration: (label == 'Task Name:' && task.isCompleted)
           ? TextDecoration.lineThrough
           : TextDecoration.none,
@@ -412,7 +430,9 @@ class _TaskCard extends StatelessWidget {
         children: [
           SizedBox(
             width: 90,
-            child: Text(label, style: textTheme.labelMedium),
+            child: Text(label,
+                style: textTheme.labelMedium?.copyWith(
+                    fontSize: cardFontSize)), // Apply smaller font size
           ),
           Expanded(
             child: Text(value, style: valueStyle),
