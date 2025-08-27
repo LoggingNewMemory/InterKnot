@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as p;
+import 'package:image_cropper/image_cropper.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -40,14 +41,31 @@ class _SettingsPageState extends State<SettingsPage> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      final appDir = await getApplicationDocumentsDirectory();
-      final fileName = p.basename(pickedFile.path);
-      final savedImage =
-          await File(pickedFile.path).copy('${appDir.path}/$fileName');
-      if (mounted) {
-        setState(() {
-          _imagePath = savedImage.path;
-        });
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+        uiSettings: [
+          AndroidUiSettings(
+              toolbarTitle: 'Crop Your Avatar',
+              toolbarColor: Colors.black,
+              toolbarWidgetColor: Colors.white,
+              initAspectRatio: CropAspectRatioPreset.original,
+              lockAspectRatio: false),
+          IOSUiSettings(
+            title: 'Crop Your Avatar',
+          ),
+        ],
+      );
+
+      if (croppedFile != null) {
+        final appDir = await getApplicationDocumentsDirectory();
+        final fileName = p.basename(croppedFile.path);
+        final savedImage =
+            await File(croppedFile.path).copy('${appDir.path}/$fileName');
+        if (mounted) {
+          setState(() {
+            _imagePath = savedImage.path;
+          });
+        }
       }
     }
   }
