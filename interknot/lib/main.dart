@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import 'settings.dart';
 import 'tasker.dart';
+import 'webclient.dart'; // Import the new webclient file
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -223,8 +224,32 @@ class _SideNavBar extends StatelessWidget {
         children: [
           _buildNavIcon(icon: Icons.account_circle, onPressed: () {}),
           const SizedBox(height: 20),
-          _buildNavIcon(icon: FontAwesomeIcons.whatsapp, onPressed: () {}),
-          _buildNavIcon(icon: Icons.telegram, onPressed: () {}),
+          _buildNavIcon(
+              icon: FontAwesomeIcons.whatsapp,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const WebClientPage(
+                      title: 'WhatsApp Web',
+                      url: 'https://web.whatsapp.com/',
+                    ),
+                  ),
+                );
+              }),
+          _buildNavIcon(
+              icon: Icons.telegram,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const WebClientPage(
+                      title: 'Telegram Web',
+                      url: 'https://web.telegram.org/',
+                    ),
+                  ),
+                );
+              }),
           _buildNavIcon(icon: Icons.music_note, onPressed: () {}),
           const Spacer(),
           _buildNavIcon(icon: Icons.settings, onPressed: onSettingsTap),
