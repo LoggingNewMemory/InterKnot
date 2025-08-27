@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -68,6 +69,7 @@ class _HomePageState extends State<HomePage>
   void initState() {
     super.initState();
     _loadUsername();
+    _loadTasks(); // Load saved tasks when the app starts.
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
@@ -79,6 +81,36 @@ class _HomePageState extends State<HomePage>
     _animationController.dispose();
     super.dispose();
   }
+
+  // --- Task Persistence Logic ---
+
+  // NEW: Saves the current list of tasks to device storage.
+  Future<void> _saveTasks() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Convert the list of Task objects into a list of JSON strings.
+    final List<String> tasksAsString =
+        _tasks.map((task) => jsonEncode(task.toJson())).toList();
+    await prefs.setStringList('tasks', tasksAsString);
+  }
+
+  // NEW: Loads tasks from device storage when the app starts.
+  Future<void> _loadTasks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String>? tasksAsString = prefs.getStringList('tasks');
+    if (tasksAsString != null) {
+      if (mounted) {
+        setState(() {
+          // Decode the JSON strings back into Task objects.
+          _tasks.clear();
+          _tasks.addAll(tasksAsString
+              .map((taskString) => Task.fromJson(jsonDecode(taskString)))
+              .toList());
+        });
+      }
+    }
+  }
+
+  // --- Navigation and State Update Logic ---
 
   Future<void> _loadUsername() async {
     final prefs = await SharedPreferences.getInstance();
@@ -107,14 +139,15 @@ class _HomePageState extends State<HomePage>
       setState(() {
         _tasks.add(newTask);
       });
+      _saveTasks(); // Save the list after adding a new task.
     }
   }
 
-  // This function updates a task's completion status.
   void _updateTaskStatus(int index, bool isCompleted) {
     setState(() {
       _tasks[index].isCompleted = isCompleted;
     });
+    _saveTasks(); // Save the list after updating a task.
   }
 
   @override
@@ -155,7 +188,6 @@ class _HomePageState extends State<HomePage>
               child: Material(
                 elevation: 8.0,
                 color: Colors.black,
-                // Pass the task list and the update function to the main content.
                 child: _MainContent(
                   username: _username,
                   tasks: _tasks,

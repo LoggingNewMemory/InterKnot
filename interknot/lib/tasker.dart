@@ -14,6 +14,25 @@ class Task {
     required this.priority,
     this.isCompleted = false, // Defaults to false for new tasks.
   });
+
+  // NEW: Converts a Task instance into a Map (JSON format).
+  // This is essential for saving the task data.
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'dueDate': dueDate.toIso8601String(), // DateTime is saved as a string
+        'priority': priority,
+        'isCompleted': isCompleted,
+      };
+
+  // NEW: Creates a Task instance from a Map (JSON format).
+  // This is used to reconstruct the task object when loading data.
+  factory Task.fromJson(Map<String, dynamic> json) => Task(
+        name: json['name'],
+        dueDate: DateTime.parse(
+            json['dueDate']), // The string is parsed back to DateTime
+        priority: json['priority'],
+        isCompleted: json['isCompleted'],
+      );
 }
 
 // The page for adding a new task
