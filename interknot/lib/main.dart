@@ -225,7 +225,6 @@ class _SideNavBar extends StatelessWidget {
           const SizedBox(height: 20),
           _buildNavIcon(icon: FontAwesomeIcons.whatsapp, onPressed: () {}),
           _buildNavIcon(icon: Icons.telegram, onPressed: () {}),
-          _buildNavIcon(icon: FontAwesomeIcons.whatsapp, onPressed: () {}),
           _buildNavIcon(icon: Icons.music_note, onPressed: () {}),
           const Spacer(),
           _buildNavIcon(icon: Icons.settings, onPressed: onSettingsTap),
