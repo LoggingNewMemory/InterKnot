@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math' as math;
 import 'settings.dart';
 
 Future<void> main() async {
@@ -55,24 +56,29 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  String _username = 'Proxy'; // Default username
-  bool _isSidebarVisible = true; // NEW: State to control sidebar visibility
+// Add 'SingleTickerProviderStateMixin' for the AnimationController
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
+  String _username = 'Proxy';
+  late AnimationController _animationController;
+  final double _sidebarWidth = 71.0; // Width of sidebar + divider
 
   @override
   void initState() {
     super.initState();
     _loadUsername();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
   }
 
-  // NEW: Method to toggle the sidebar's visibility
-  void _toggleSidebar() {
-    setState(() {
-      _isSidebarVisible = !_isSidebarVisible;
-    });
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
-  // Method to load the username from shared preferences
   Future<void> _loadUsername() async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
@@ -82,7 +88,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Method to navigate to the settings page and wait for a result
   void _navigateToSettings() async {
     await Navigator.push(
       context,
@@ -91,24 +96,66 @@ class _HomePageState extends State<HomePage> {
     _loadUsername();
   }
 
+  // A function to toggle the sidebar open or closed
+  void _toggleSidebar() {
+    if (_animationController.isCompleted) {
+      _animationController.reverse();
+    } else {
+      _animationController.forward();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Row(
-        children: [
-          // UPDATED: Conditionally build the sidebar and divider
-          if (_isSidebarVisible)
-            _SideNavBar(onSettingsTap: _navigateToSettings),
-          if (_isSidebarVisible)
-            VerticalDivider(width: 1, color: Colors.grey[850]),
-          Expanded(
-            // UPDATED: Pass the username AND the toggle callback
-            child: _MainContent(
-              username: _username,
-              onToggleSidebar: _toggleSidebar, // Pass the callback
+      body: GestureDetector(
+        // Detect horizontal drags to control the animation
+        onHorizontalDragUpdate: (details) {
+          // Update the animation value based on the drag distance
+          _animationController.value +=
+              (details.primaryDelta ?? 0) / _sidebarWidth;
+        },
+        onHorizontalDragEnd: (details) {
+          // When drag ends, decide whether to open or close based on position
+          if (_animationController.value < 0.5) {
+            _animationController.reverse();
+          } else {
+            _animationController.forward();
+          }
+        },
+        // Use a Stack to layer the sidebar behind the main content
+        child: Stack(
+          children: [
+            // The sidebar is the first item in the stack (the bottom layer)
+            Row(
+              children: [
+                _SideNavBar(onSettingsTap: _navigateToSettings),
+                VerticalDivider(width: 1, color: Colors.grey[850]),
+              ],
             ),
-          ),
-        ],
+            // The main content is the top layer, animated to slide
+            AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                // Use a Transform to move the child widget
+                return Transform(
+                  // We use a 3D transform for a slight perspective effect
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.001) // Perspective
+                    ..translate(_animationController.value * _sidebarWidth)
+                    ..rotateY(_animationController.value * -math.pi / 12),
+                  alignment: Alignment.centerLeft,
+                  child: child,
+                );
+              },
+              child: Material(
+                elevation: 8.0,
+                color: Colors.black, // Match the background
+                child: _MainContent(username: _username),
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -162,15 +209,11 @@ class _SideNavBar extends StatelessWidget {
   }
 }
 
-// UPDATED: _MainContent now includes a toggle button
+// _MainContent is simplified as it no longer needs the toggle button
 class _MainContent extends StatelessWidget {
   final String username;
-  final VoidCallback onToggleSidebar; // NEW: Accept the callback
 
-  const _MainContent({
-    required this.username,
-    required this.onToggleSidebar, // NEW: Add to constructor
-  });
+  const _MainContent({required this.username});
 
   @override
   Widget build(BuildContext context) {
@@ -178,37 +221,34 @@ class _MainContent extends StatelessWidget {
         DateFormat('dd / MMM / yyyy').format(DateTime.now());
     final textTheme = Theme.of(context).textTheme;
 
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // NEW: Added the toggle button
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: onToggleSidebar, // Call the callback when pressed
-            color: Colors.white70,
-            tooltip: 'Toggle Sidebar',
-          ),
-          const SizedBox(height: 8), // Space after the button
-          Text(
-            'Welcome to',
-            style:
-                textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w400),
-          ),
-          Text(
-            'Inter-Knot, $username',
-            style: textTheme.headlineLarge,
-          ),
-          const Divider(
-              color: Colors.white, thickness: 1.5, endIndent: 50, height: 20),
-          Text(
-            'The Day is $formattedDate',
-            style: textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 40),
-          _TaskCard(),
-        ],
+    return Scaffold(
+      // Wrap in a Scaffold to get a clean, black background
+      backgroundColor: Colors.black,
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 40), // Add padding at the top
+            Text(
+              'Welcome to',
+              style: textTheme.headlineLarge
+                  ?.copyWith(fontWeight: FontWeight.w400),
+            ),
+            Text(
+              'Inter-Knot, $username',
+              style: textTheme.headlineLarge,
+            ),
+            const Divider(
+                color: Colors.white, thickness: 1.5, endIndent: 50, height: 20),
+            Text(
+              'The Day is $formattedDate',
+              style: textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 40),
+            _TaskCard(),
+          ],
+        ),
       ),
     );
   }
