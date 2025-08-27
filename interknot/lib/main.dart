@@ -206,8 +206,11 @@ class _MainContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String formattedDate =
-        DateFormat('dd / MMM / yyyy').format(DateTime.now());
+    // Get current date and time
+    final now = DateTime.now();
+    final String formattedDate = DateFormat('dd / MMM / yyyy').format(now);
+    // Format the current time in 24-hour format
+    final String formattedTime = DateFormat('HH:mm').format(now);
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -245,6 +248,11 @@ class _MainContent extends StatelessWidget {
             ),
             Text(
               'The Day is $formattedDate',
+              style: textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'The Time is $formattedTime',
               style: textTheme.bodyMedium,
             ),
             const SizedBox(height: 40),
