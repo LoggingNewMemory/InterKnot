@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -62,6 +63,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   String _username = 'Proxy';
+  String? _avatarPath;
   late AnimationController _animationController;
   final double _sidebarWidth = 71.0;
   final List<Task> _tasks = []; // List to hold the tasks
@@ -69,7 +71,7 @@ class _HomePageState extends State<HomePage>
   @override
   void initState() {
     super.initState();
-    _loadUsername();
+    _loadUserData();
     _loadTasks(); // Load saved tasks when the app starts.
     _animationController = AnimationController(
       vsync: this,
@@ -109,11 +111,12 @@ class _HomePageState extends State<HomePage>
 
   // --- Navigation and State Update Logic ---
 
-  Future<void> _loadUsername() async {
+  Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
       setState(() {
         _username = prefs.getString('username') ?? 'Proxy';
+        _avatarPath = prefs.getString('user_avatar_path');
       });
     }
   }
@@ -123,7 +126,7 @@ class _HomePageState extends State<HomePage>
       context,
       MaterialPageRoute(builder: (context) => const SettingsPage()),
     );
-    _loadUsername();
+    _loadUserData();
   }
 
   void _navigateToTasker() async {
@@ -174,7 +177,10 @@ class _HomePageState extends State<HomePage>
           children: [
             Row(
               children: [
-                _SideNavBar(onSettingsTap: _navigateToSettings),
+                _SideNavBar(
+                  onSettingsTap: _navigateToSettings,
+                  avatarPath: _avatarPath,
+                ),
                 VerticalDivider(width: 1, color: Colors.grey[850]),
               ],
             ),
@@ -214,15 +220,36 @@ class _HomePageState extends State<HomePage>
 
 class _SideNavBar extends StatelessWidget {
   final VoidCallback onSettingsTap;
-  const _SideNavBar({required this.onSettingsTap});
+  final String? avatarPath;
+
+  const _SideNavBar({
+    required this.onSettingsTap,
+    this.avatarPath,
+  });
+
   @override
   Widget build(BuildContext context) {
+    final imageProvider = avatarPath != null && File(avatarPath!).existsSync()
+        ? FileImage(File(avatarPath!)) as ImageProvider
+        : null;
+
     return Container(
       width: 70,
       padding: const EdgeInsets.symmetric(vertical: 20.0),
       child: Column(
         children: [
-          _buildNavIcon(icon: Icons.account_circle, onPressed: () {}),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            child: CircleAvatar(
+              radius: 25,
+              backgroundColor: Colors.grey[900],
+              backgroundImage: imageProvider,
+              child: imageProvider == null
+                  ? const Icon(Icons.account_circle,
+                      size: 22, color: Colors.white70)
+                  : null,
+            ),
+          ),
           const SizedBox(height: 20),
           _buildNavIcon(
               icon: FontAwesomeIcons.whatsapp,

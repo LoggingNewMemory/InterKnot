@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as p;
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -11,36 +15,60 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   late TextEditingController _nameController;
   String _currentName = '';
+  String? _imagePath;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _loadCurrentUser();
+    _loadUserData();
   }
 
-  Future<void> _loadCurrentUser() async {
+  Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
       setState(() {
         _currentName = prefs.getString('username') ?? 'Proxy';
         _nameController.text = _currentName;
+        _imagePath = prefs.getString('user_avatar_path');
       });
     }
   }
 
-  // This method now runs when the user tries to go back
-  Future<void> _saveUsernameOnExit() async {
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final fileName = p.basename(pickedFile.path);
+      final savedImage =
+          await File(pickedFile.path).copy('${appDir.path}/$fileName');
+      if (mounted) {
+        setState(() {
+          _imagePath = savedImage.path;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveSettingsOnExit() async {
+    final prefs = await SharedPreferences.getInstance();
     final newUsername = _nameController.text;
+
+    // Save username
     if (newUsername.isNotEmpty && newUsername != _currentName) {
-      final prefs = await SharedPreferences.getInstance();
       await prefs.setString('username', newUsername);
+    }
+
+    // Save image path
+    if (_imagePath != null) {
+      await prefs.setString('user_avatar_path', _imagePath!);
     }
   }
 
   @override
   void dispose() {
-    // The save logic is no longer needed here.
     _nameController.dispose();
     super.dispose();
   }
@@ -49,13 +77,9 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    // **CHANGE**: Wrapped the Scaffold in a WillPopScope
     return WillPopScope(
       onWillPop: () async {
-        // This code now runs when the user presses the back button.
-        // It awaits the save operation to ensure it completes.
-        await _saveUsernameOnExit();
-        // Return true to allow the screen to be popped.
+        await _saveSettingsOnExit();
         return true;
       },
       child: Scaffold(
@@ -71,6 +95,23 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: GestureDetector(
+                  onTap: _pickImage,
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.grey[800],
+                    backgroundImage: _imagePath != null
+                        ? FileImage(File(_imagePath!))
+                        : null,
+                    child: _imagePath == null
+                        ? const Icon(Icons.add_a_photo,
+                            color: Colors.white70, size: 40)
+                        : null,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
               Text(
                 'Change Username',
                 style: textTheme.titleLarge,
