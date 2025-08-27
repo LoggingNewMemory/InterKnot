@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-// A simple model class to represent a task
+// The Task model now includes a boolean to track completion status.
 class Task {
   final String name;
   final DateTime dueDate;
   final String priority;
+  bool isCompleted; // This field tracks if the task is done.
 
-  Task({required this.name, required this.dueDate, required this.priority});
+  Task({
+    required this.name,
+    required this.dueDate,
+    required this.priority,
+    this.isCompleted = false, // Defaults to false for new tasks.
+  });
 }
 
 // The page for adding a new task
@@ -21,7 +27,8 @@ class TaskerPage extends StatefulWidget {
 class _TaskerPageState extends State<TaskerPage> {
   final _formKey = GlobalKey<FormState>();
   final _taskNameController = TextEditingController();
-  DateTime? _selectedDate;
+  // Changed to hold both date and time information.
+  DateTime? _selectedDateTime;
   String _selectedPriority = 'Medium';
   final List<String> _priorities = ['Low', 'Medium', 'High'];
 
@@ -31,30 +38,46 @@ class _TaskerPageState extends State<TaskerPage> {
     super.dispose();
   }
 
-  // Function to show the date picker
-  Future<void> _pickDate() async {
+  // This function now picks both a date and a time.
+  Future<void> _pickDateTime() async {
     final pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: _selectedDateTime ?? DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime(2101),
     );
-    if (pickedDate != null && pickedDate != _selectedDate) {
-      setState(() {
-        _selectedDate = pickedDate;
-      });
-    }
+    // Exit if the user cancels the date picker.
+    if (pickedDate == null) return;
+
+    // ignore: use_build_context_synchronously
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_selectedDateTime ?? DateTime.now()),
+    );
+    // Exit if the user cancels the time picker.
+    if (pickedTime == null) return;
+
+    // Combine the picked date and time and update the state.
+    setState(() {
+      _selectedDateTime = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      );
+    });
   }
 
   // Function to save the task
   void _saveTask() {
     // Validate the form before saving
     if (_formKey.currentState!.validate()) {
-      if (_selectedDate == null) {
-        // Show an error if no date is selected
+      if (_selectedDateTime == null) {
+        // Show an error if no date and time are selected
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please select a due date.'),
+            content: Text('Please select a due date and time.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -64,7 +87,7 @@ class _TaskerPageState extends State<TaskerPage> {
       // Create a new task object
       final newTask = Task(
         name: _taskNameController.text,
-        dueDate: _selectedDate!,
+        dueDate: _selectedDateTime!,
         priority: _selectedPriority,
       );
 
@@ -110,10 +133,10 @@ class _TaskerPageState extends State<TaskerPage> {
                 },
               ),
               const SizedBox(height: 24),
-              Text('Due Date', style: textTheme.titleLarge),
+              Text('Due Date & Time', style: textTheme.titleLarge),
               const SizedBox(height: 8),
               GestureDetector(
-                onTap: _pickDate,
+                onTap: _pickDateTime,
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16.0),
@@ -122,9 +145,11 @@ class _TaskerPageState extends State<TaskerPage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    _selectedDate == null
-                        ? 'Select a date'
-                        : DateFormat('dd / MMM / yyyy').format(_selectedDate!),
+                    // Display the selected date and time, or a prompt.
+                    _selectedDateTime == null
+                        ? 'Select date and time'
+                        : DateFormat('dd / MMM / yyyy HH:mm')
+                            .format(_selectedDateTime!),
                     style: textTheme.bodyMedium?.copyWith(color: Colors.white),
                   ),
                 ),
