@@ -123,30 +123,36 @@ class _SettingsPageState extends State<SettingsPage> {
                         : null,
                   ),
                   const Spacer(),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      OutlinedButton(
-                        onPressed: _pickImage,
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8.0),
+                  SizedBox(
+                    width: 120, // Set a fixed width for the buttons' container
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment
+                          .stretch, // Make buttons fill the width
+                      children: [
+                        OutlinedButton(
+                          onPressed: _pickImage,
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
                           ),
+                          child: const Text('Change'),
                         ),
-                        child: const Text('Change'),
-                      ),
-                      OutlinedButton(
-                        onPressed: _resetImage,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.redAccent,
-                          side: const BorderSide(color: Colors.redAccent),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8.0),
+                        const SizedBox(
+                            height: 8), // Add spacing between buttons
+                        OutlinedButton(
+                          onPressed: _resetImage,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.redAccent,
+                            side: const BorderSide(color: Colors.redAccent),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
                           ),
+                          child: const Text('Reset'),
                         ),
-                        child: const Text('Reset'),
-                      ),
-                    ],
+                      ],
+                    ),
                   )
                 ],
               ),
