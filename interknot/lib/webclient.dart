@@ -45,12 +45,18 @@ class _WebClientPageState extends State<WebClientPage> {
               initialOptions: InAppWebViewGroupOptions(
                 crossPlatform: InAppWebViewOptions(
                   userAgent:
-                      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+                      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
                   javaScriptEnabled: true,
+                  mediaPlaybackRequiresUserGesture: false,
+                  clearCache: true,
                 ),
                 android: AndroidInAppWebViewOptions(
                   domStorageEnabled: true,
                   databaseEnabled: true,
+                  useHybridComposition: true,
+                ),
+                ios: IOSInAppWebViewOptions(
+                  allowsInlineMediaPlayback: true,
                 ),
               ),
               onWebViewCreated: (controller) {
