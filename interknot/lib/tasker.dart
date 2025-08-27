@@ -124,98 +124,102 @@ class _TaskerPageState extends State<TaskerPage> {
         title: const Text('Add a New Task'),
         backgroundColor: Colors.grey[900],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Task Name', style: textTheme.titleLarge),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _taskNameController,
-                decoration: InputDecoration(
-                  hintText: 'Enter task name',
-                  filled: true,
-                  fillColor: Colors.grey[900],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a task name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              Text('Due Date & Time', style: textTheme.titleLarge),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _pickDateTime,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[900],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    // Display the selected date and time, or a prompt.
-                    _selectedDateTime == null
-                        ? 'Select date and time'
-                        : DateFormat('dd / MMM / yyyy HH:mm')
-                            .format(_selectedDateTime!),
-                    style: textTheme.bodyMedium?.copyWith(color: Colors.white),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text('Priority', style: textTheme.titleLarge),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _selectedPriority,
-                items: _priorities.map((String priority) {
-                  return DropdownMenuItem<String>(
-                    value: priority,
-                    child: Text(priority),
-                  );
-                }).toList(),
-                onChanged: (newValue) {
-                  setState(() {
-                    _selectedPriority = newValue!;
-                  });
-                },
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey[900],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _saveTask,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
+      // MODIFIED: Wrapped the body in a SingleChildScrollView
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Task Name', style: textTheme.titleLarge),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _taskNameController,
+                  decoration: InputDecoration(
+                    hintText: 'Enter task name',
+                    filled: true,
+                    fillColor: Colors.grey[900],
+                    border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
                     ),
                   ),
-                  child:
-                      const Text('Save Task', style: TextStyle(fontSize: 18)),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a task name';
+                    }
+                    return null;
+                  },
                 ),
-              ),
-            ],
+                const SizedBox(height: 24),
+                Text('Due Date & Time', style: textTheme.titleLarge),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: _pickDateTime,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[900],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _selectedDateTime == null
+                          ? 'Select date and time'
+                          : DateFormat('dd / MMM / yyyy HH:mm')
+                              .format(_selectedDateTime!),
+                      style:
+                          textTheme.bodyMedium?.copyWith(color: Colors.white),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text('Priority', style: textTheme.titleLarge),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: _selectedPriority,
+                  items: _priorities.map((String priority) {
+                    return DropdownMenuItem<String>(
+                      value: priority,
+                      child: Text(priority),
+                    );
+                  }).toList(),
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedPriority = newValue!;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.grey[900],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                // MODIFIED: Replaced Spacer with a SizedBox for consistent spacing
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _saveTask,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child:
+                        const Text('Save Task', style: TextStyle(fontSize: 18)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
