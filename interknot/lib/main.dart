@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'settings.dart'; // Import the new settings page
+import 'settings.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,7 +48,6 @@ class MainApp extends StatelessWidget {
   }
 }
 
-// Converted to a StatefulWidget to manage the username state
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -58,17 +57,24 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String _username = 'Proxy'; // Default username
+  bool _isSidebarVisible = true; // NEW: State to control sidebar visibility
 
   @override
   void initState() {
     super.initState();
-    _loadUsername(); // Load the username when the widget is first created
+    _loadUsername();
+  }
+
+  // NEW: Method to toggle the sidebar's visibility
+  void _toggleSidebar() {
+    setState(() {
+      _isSidebarVisible = !_isSidebarVisible;
+    });
   }
 
   // Method to load the username from shared preferences
   Future<void> _loadUsername() async {
     final prefs = await SharedPreferences.getInstance();
-    // Use mounted check to avoid calling setState on a disposed widget
     if (mounted) {
       setState(() {
         _username = prefs.getString('username') ?? 'Proxy';
@@ -78,13 +84,10 @@ class _HomePageState extends State<HomePage> {
 
   // Method to navigate to the settings page and wait for a result
   void _navigateToSettings() async {
-    // Await the push so the code below only runs after the user returns
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const SettingsPage()),
     );
-
-    // Always reload the username after returning from the settings page
     _loadUsername();
   }
 
@@ -93,12 +96,17 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: Row(
         children: [
-          // Pass the navigation callback to the SideNavBar
-          _SideNavBar(onSettingsTap: _navigateToSettings),
-          VerticalDivider(width: 1, color: Colors.grey[850]),
+          // UPDATED: Conditionally build the sidebar and divider
+          if (_isSidebarVisible)
+            _SideNavBar(onSettingsTap: _navigateToSettings),
+          if (_isSidebarVisible)
+            VerticalDivider(width: 1, color: Colors.grey[850]),
           Expanded(
-            // Pass the current username to the MainContent
-            child: _MainContent(username: _username),
+            // UPDATED: Pass the username AND the toggle callback
+            child: _MainContent(
+              username: _username,
+              onToggleSidebar: _toggleSidebar, // Pass the callback
+            ),
           ),
         ],
       ),
@@ -113,7 +121,7 @@ class _HomePageState extends State<HomePage> {
 }
 
 class _SideNavBar extends StatelessWidget {
-  final VoidCallback onSettingsTap; // Callback for when settings is tapped
+  final VoidCallback onSettingsTap;
 
   const _SideNavBar({required this.onSettingsTap});
 
@@ -131,7 +139,6 @@ class _SideNavBar extends StatelessWidget {
           _buildNavIcon(icon: FontAwesomeIcons.whatsapp, onPressed: () {}),
           _buildNavIcon(icon: Icons.music_note, onPressed: () {}),
           const Spacer(),
-          // Use the callback here
           _buildNavIcon(icon: Icons.settings, onPressed: onSettingsTap),
         ],
       ),
@@ -155,10 +162,15 @@ class _SideNavBar extends StatelessWidget {
   }
 }
 
+// UPDATED: _MainContent now includes a toggle button
 class _MainContent extends StatelessWidget {
-  final String username; // Accept the username as a parameter
+  final String username;
+  final VoidCallback onToggleSidebar; // NEW: Accept the callback
 
-  const _MainContent({required this.username});
+  const _MainContent({
+    required this.username,
+    required this.onToggleSidebar, // NEW: Add to constructor
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -171,12 +183,19 @@ class _MainContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // NEW: Added the toggle button
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: onToggleSidebar, // Call the callback when pressed
+            color: Colors.white70,
+            tooltip: 'Toggle Sidebar',
+          ),
+          const SizedBox(height: 8), // Space after the button
           Text(
             'Welcome to',
             style:
                 textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w400),
           ),
-          // Display the dynamic username
           Text(
             'Inter-Knot, $username',
             style: textTheme.headlineLarge,
