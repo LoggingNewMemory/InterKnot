@@ -56,12 +56,11 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-// Add 'SingleTickerProviderStateMixin' for the AnimationController
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   String _username = 'Proxy';
   late AnimationController _animationController;
-  final double _sidebarWidth = 71.0; // Width of sidebar + divider
+  final double _sidebarWidth = 71.0;
 
   @override
   void initState() {
@@ -96,7 +95,6 @@ class _HomePageState extends State<HomePage>
     _loadUsername();
   }
 
-  // A function to toggle the sidebar open or closed
   void _toggleSidebar() {
     if (_animationController.isCompleted) {
       _animationController.reverse();
@@ -109,39 +107,31 @@ class _HomePageState extends State<HomePage>
   Widget build(BuildContext context) {
     return Scaffold(
       body: GestureDetector(
-        // Detect horizontal drags to control the animation
         onHorizontalDragUpdate: (details) {
-          // Update the animation value based on the drag distance
           _animationController.value +=
               (details.primaryDelta ?? 0) / _sidebarWidth;
         },
         onHorizontalDragEnd: (details) {
-          // When drag ends, decide whether to open or close based on position
           if (_animationController.value < 0.5) {
             _animationController.reverse();
           } else {
             _animationController.forward();
           }
         },
-        // Use a Stack to layer the sidebar behind the main content
         child: Stack(
           children: [
-            // The sidebar is the first item in the stack (the bottom layer)
             Row(
               children: [
                 _SideNavBar(onSettingsTap: _navigateToSettings),
                 VerticalDivider(width: 1, color: Colors.grey[850]),
               ],
             ),
-            // The main content is the top layer, animated to slide
             AnimatedBuilder(
               animation: _animationController,
               builder: (context, child) {
-                // Use a Transform to move the child widget
                 return Transform(
-                  // We use a 3D transform for a slight perspective effect
                   transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.001) // Perspective
+                    ..setEntry(3, 2, 0.001)
                     ..translate(_animationController.value * _sidebarWidth)
                     ..rotateY(_animationController.value * -math.pi / 12),
                   alignment: Alignment.centerLeft,
@@ -150,7 +140,7 @@ class _HomePageState extends State<HomePage>
               },
               child: Material(
                 elevation: 8.0,
-                color: Colors.black, // Match the background
+                color: Colors.black,
                 child: _MainContent(username: _username),
               ),
             ),
@@ -209,7 +199,6 @@ class _SideNavBar extends StatelessWidget {
   }
 }
 
-// _MainContent is simplified as it no longer needs the toggle button
 class _MainContent extends StatelessWidget {
   final String username;
 
@@ -222,25 +211,38 @@ class _MainContent extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      // Wrap in a Scaffold to get a clean, black background
       backgroundColor: Colors.black,
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 40), // Add padding at the top
+            const SizedBox(height: 40),
             Text(
               'Welcome to',
-              style: textTheme.headlineLarge
-                  ?.copyWith(fontWeight: FontWeight.w400),
+              style: textTheme.headlineLarge?.copyWith(
+                fontWeight: FontWeight.w400,
+                fontSize: 28.0,
+              ),
             ),
-            Text(
-              'Inter-Knot, $username',
-              style: textTheme.headlineLarge,
+            IntrinsicWidth(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Inter-Knot, $username',
+                    style: textTheme.headlineLarge?.copyWith(
+                      fontSize: 28.0,
+                    ),
+                  ),
+                  const Divider(
+                    color: Colors.white,
+                    thickness: 1.5,
+                    height: 20,
+                  ),
+                ],
+              ),
             ),
-            const Divider(
-                color: Colors.white, thickness: 1.5, endIndent: 50, height: 20),
             Text(
               'The Day is $formattedDate',
               style: textTheme.bodyMedium,
