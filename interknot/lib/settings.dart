@@ -52,6 +52,16 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<void> _resetImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_avatar_path');
+    if (mounted) {
+      setState(() {
+        _imagePath = null;
+      });
+    }
+  }
+
   Future<void> _saveSettingsOnExit() async {
     final prefs = await SharedPreferences.getInstance();
     final newUsername = _nameController.text;
@@ -64,6 +74,9 @@ class _SettingsPageState extends State<SettingsPage> {
     // Save image path
     if (_imagePath != null) {
       await prefs.setString('user_avatar_path', _imagePath!);
+    } else {
+      // If image was reset, ensure the key is removed
+      await prefs.remove('user_avatar_path');
     }
   }
 
@@ -95,26 +108,52 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: CircleAvatar(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.grey[800],
                     backgroundImage: _imagePath != null
                         ? FileImage(File(_imagePath!))
                         : null,
                     child: _imagePath == null
-                        ? const Icon(Icons.add_a_photo,
+                        ? const Icon(Icons.person,
                             color: Colors.white70, size: 40)
                         : null,
                   ),
-                ),
+                  const Spacer(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      OutlinedButton(
+                        onPressed: _pickImage,
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                        ),
+                        child: const Text('Change Picture'),
+                      ),
+                      OutlinedButton(
+                        onPressed: _resetImage,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.redAccent,
+                          side: const BorderSide(color: Colors.redAccent),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                        ),
+                        child: const Text('Reset'),
+                      ),
+                    ],
+                  )
+                ],
               ),
               const SizedBox(height: 32),
               Text(
                 'Change Username',
-                style: textTheme.titleLarge,
+                style: textTheme.titleMedium,
               ),
               const SizedBox(height: 16),
               TextField(
