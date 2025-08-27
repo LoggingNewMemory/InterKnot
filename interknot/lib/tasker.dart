@@ -137,6 +137,8 @@ class _TaskerPageState extends State<TaskerPage> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _taskNameController,
+                  // MODIFIED: This line fixes the issue.
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: InputDecoration(
                     hintText: 'Enter task name',
                     filled: true,
