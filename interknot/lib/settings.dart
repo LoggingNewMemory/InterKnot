@@ -133,7 +133,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             borderRadius: BorderRadius.circular(8.0),
                           ),
                         ),
-                        child: const Text('Change Picture'),
+                        child: const Text('Change'),
                       ),
                       OutlinedButton(
                         onPressed: _resetImage,
