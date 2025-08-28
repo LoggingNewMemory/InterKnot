@@ -37,7 +37,7 @@ class _WebClientViewState extends State<WebClientView> {
                     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
                 javaScriptEnabled: true,
                 mediaPlaybackRequiresUserGesture: false,
-                clearCache: true,
+                clearCache: false,
               ),
               android: AndroidInAppWebViewOptions(
                 domStorageEnabled: true,
