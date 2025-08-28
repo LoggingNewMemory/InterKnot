@@ -43,16 +43,15 @@ class _SettingsPageState extends State<SettingsPage> {
     if (pickedFile != null) {
       final croppedFile = await ImageCropper().cropImage(
         sourcePath: pickedFile.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
         uiSettings: [
           AndroidUiSettings(
               toolbarTitle: 'Crop Your Avatar',
               toolbarColor: Colors.black,
               toolbarWidgetColor: Colors.white,
-              initAspectRatio: CropAspectRatioPreset.original,
-              lockAspectRatio: false),
-          IOSUiSettings(
-            title: 'Crop Your Avatar',
-          ),
+              initAspectRatio: CropAspectRatioPreset.square,
+              lockAspectRatio: true),
+          // IOSUiSettings has been removed for an Android-only implementation
         ],
       );
 
