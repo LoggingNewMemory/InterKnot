@@ -76,6 +76,11 @@ class _HomePageState extends State<HomePage>
   final double _sidebarWidth = 71.0;
   final List<Task> _tasks = [];
 
+  // --- ADDED FOR EDGE-SWIPE FIX ---
+  final double _edgeDragWidth = 30.0; // The width of the edge area in pixels
+  bool _isEdgeDrag = false; // Flag to check if the drag started on the edge
+  // --------------------------------
+
   // --- State for managing the main content view ---
   WebClientArgs? _activeWebClient;
   InAppWebViewController? _webViewController;
@@ -195,17 +200,29 @@ class _HomePageState extends State<HomePage>
   Widget build(BuildContext context) {
     return Scaffold(
       body: GestureDetector(
-        onHorizontalDragUpdate: (details) {
-          _animationController.value +=
-              (details.primaryDelta ?? 0) / _sidebarWidth;
+        // --- UPDATED GESTURE LOGIC FOR OPENING AND CLOSING ---
+        onHorizontalDragStart: (details) {
+          _isEdgeDrag = details.globalPosition.dx < _edgeDragWidth;
         },
-        onHorizontalDragEnd: (details) {
-          if (_animationController.value < 0.5) {
-            _animationController.reverse();
-          } else {
-            _animationController.forward();
+        onHorizontalDragUpdate: (details) {
+          if (_isEdgeDrag ||
+              _animationController.status != AnimationStatus.dismissed) {
+            _animationController.value +=
+                (details.primaryDelta ?? 0) / _sidebarWidth;
           }
         },
+        onHorizontalDragEnd: (details) {
+          if (_animationController.status != AnimationStatus.dismissed &&
+              _animationController.status != AnimationStatus.completed) {
+            if (_animationController.value < 0.5) {
+              _animationController.reverse();
+            } else {
+              _animationController.forward();
+            }
+          }
+          _isEdgeDrag = false;
+        },
+        // --------------------------------------------------------
         child: Stack(
           children: [
             Row(
