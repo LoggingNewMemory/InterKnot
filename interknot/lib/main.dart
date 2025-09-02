@@ -130,12 +130,14 @@ class _HomePageState extends State<HomePage>
     setState(() {
       _activeWebClient = null;
     });
+    _animationController.reverse();
   }
 
   void _showWebClient(String title, String url) {
     setState(() {
       _activeWebClient = WebClientArgs(title: title, url: url);
     });
+    _animationController.reverse();
   }
 
   Future<void> _loadUserData() async {
@@ -149,6 +151,7 @@ class _HomePageState extends State<HomePage>
   }
 
   void _navigateToSettings() async {
+    _animationController.reverse();
     // Return to dashboard view before navigating away
     _showDashboard();
     await Navigator.push(
@@ -196,131 +199,175 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
+    void handleDragEnd(DragEndDetails details) {
+      if (_animationController.status != AnimationStatus.dismissed &&
+          _animationController.status != AnimationStatus.completed) {
+        if (_animationController.value < 0.5) {
+          _animationController.reverse();
+        } else {
+          _animationController.forward();
+        }
+      }
+    }
+
     return Scaffold(
-      body: GestureDetector(
-        onHorizontalDragUpdate: (details) {
-          if (_animationController.status == AnimationStatus.dismissed) {
-            if ((details.primaryDelta ?? 0).abs() > 1.0) {
-              setState(() {
-                _isSidebarOnLeft = (details.primaryDelta ?? 0) > 0;
-              });
-            }
-          }
-          if (_isSidebarOnLeft) {
-            _animationController.value +=
-                (details.primaryDelta ?? 0) / _sidebarWidth;
-          } else {
-            _animationController.value -=
-                (details.primaryDelta ?? 0) / _sidebarWidth;
-          }
-        },
-        onHorizontalDragEnd: (details) {
-          if (_animationController.status != AnimationStatus.dismissed &&
-              _animationController.status != AnimationStatus.completed) {
-            if (_animationController.value < 0.5) {
-              _animationController.reverse();
-            } else {
-              _animationController.forward();
-            }
-          }
-        },
-        child: Stack(
-          children: [
-            Align(
-              alignment: _isSidebarOnLeft
-                  ? Alignment.centerLeft
-                  : Alignment.centerRight,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!_isSidebarOnLeft)
-                    VerticalDivider(width: 1, color: Colors.grey[850]),
-                  _SideNavBar(
-                    onSettingsTap: _navigateToSettings,
-                    avatarPath: _avatarPath,
-                    onHomeTap: _showDashboard,
-                    onWebClientTap: _showWebClient,
-                  ),
-                  if (_isSidebarOnLeft)
-                    VerticalDivider(width: 1, color: Colors.grey[850]),
-                ],
-              ),
-            ),
-            AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                final slideAmount = _animationController.value * _sidebarWidth;
-                final angle = _animationController.value * math.pi / 12;
-
-                final transform = Matrix4.identity()
-                  ..setEntry(3, 2, 0.001)
-                  ..translate(_isSidebarOnLeft ? slideAmount : -slideAmount)
-                  ..rotateY(_isSidebarOnLeft ? -angle : angle);
-
-                return Transform(
-                  transform: transform,
-                  alignment: _isSidebarOnLeft
-                      ? Alignment.centerLeft
-                      : Alignment.centerRight,
-                  child: child,
-                );
-              },
-              child: Material(
-                elevation: 8.0,
-                color: Colors.black,
-                child: Scaffold(
-                  backgroundColor: Colors.black,
-                  appBar: _activeWebClient == null
-                      ? null
-                      : AppBar(
-                          title: Text(_activeWebClient!.title),
-                          backgroundColor: Colors.black,
-                          elevation: 0,
-                          leading: IconButton(
-                            icon: const Icon(Icons.menu),
-                            onPressed: _toggleSidebar,
-                          ),
-                          actions: [
-                            IconButton(
-                              icon: const Icon(Icons.refresh),
-                              onPressed: () => _webViewController?.reload(),
-                            ),
-                          ],
-                        ),
-                  body: _activeWebClient == null
-                      ? _MainContent(
-                          username: _username,
-                          tasks: _tasks,
-                          onTaskStatusChanged: _updateTaskStatus,
-                          onDelete: _deleteTask,
-                        )
-                      : WebClientView(
-                          key: ValueKey(_activeWebClient!.url),
-                          url: _activeWebClient!.url,
-                          onWebViewCreated: (controller) {
-                            _webViewController = controller;
-                          },
-                        ),
+      body: Stack(
+        children: [
+          Align(
+            alignment:
+                _isSidebarOnLeft ? Alignment.centerLeft : Alignment.centerRight,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!_isSidebarOnLeft)
+                  VerticalDivider(width: 1, color: Colors.grey[850]),
+                _SideNavBar(
+                  onSettingsTap: _navigateToSettings,
+                  avatarPath: _avatarPath,
+                  onHomeTap: _showDashboard,
+                  onWebClientTap: _showWebClient,
                 ),
+                if (_isSidebarOnLeft)
+                  VerticalDivider(width: 1, color: Colors.grey[850]),
+              ],
+            ),
+          ),
+          AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              final slideAmount = _animationController.value * _sidebarWidth;
+              final angle = _animationController.value * math.pi / 12;
+
+              final transform = Matrix4.identity()
+                ..setEntry(3, 2, 0.001)
+                ..translate(_isSidebarOnLeft ? slideAmount : -slideAmount)
+                ..rotateY(_isSidebarOnLeft ? -angle : angle);
+
+              return Transform(
+                transform: transform,
+                alignment: _isSidebarOnLeft
+                    ? Alignment.centerLeft
+                    : Alignment.centerRight,
+                child: Material(
+                  elevation: 8.0,
+                  color: Colors.black,
+                  // REMOVED: borderRadius and clipBehavior properties
+                  child: child,
+                ),
+              );
+            },
+            child: GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                // This logic is for closing the sidebar by dragging the main content
+                if (_animationController.status != AnimationStatus.dismissed) {
+                  if (_isSidebarOnLeft) {
+                    _animationController.value +=
+                        (details.primaryDelta ?? 0) / _sidebarWidth;
+                  } else {
+                    _animationController.value -=
+                        (details.primaryDelta ?? 0) / _sidebarWidth;
+                  }
+                }
+              },
+              onHorizontalDragEnd: handleDragEnd,
+              child: Scaffold(
+                backgroundColor: Colors.black,
+                appBar: _activeWebClient == null
+                    ? null
+                    : AppBar(
+                        title: Text(_activeWebClient!.title),
+                        backgroundColor: Colors.black,
+                        elevation: 0,
+                        leading: IconButton(
+                          icon: const Icon(Icons.menu),
+                          onPressed: _toggleSidebar,
+                        ),
+                        actions: [
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            onPressed: () => _webViewController?.reload(),
+                          ),
+                        ],
+                      ),
+                body: _activeWebClient == null
+                    ? _MainContent(
+                        username: _username,
+                        tasks: _tasks,
+                        onTaskStatusChanged: _updateTaskStatus,
+                        onDelete: _deleteTask,
+                      )
+                    : WebClientView(
+                        key: ValueKey(_activeWebClient!.url),
+                        url: _activeWebClient!.url,
+                        onWebViewCreated: (controller) {
+                          _webViewController = controller;
+                        },
+                      ),
               ),
             ),
-          ],
-        ),
+          ),
+          // Left edge detector for opening the sidebar
+          Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                if ((details.primaryDelta ?? 0) > 0) {
+                  if (_animationController.status ==
+                      AnimationStatus.dismissed) {
+                    setState(() {
+                      _isSidebarOnLeft = true;
+                    });
+                  }
+                  if (_isSidebarOnLeft) {
+                    _animationController.value +=
+                        (details.primaryDelta ?? 0) / _sidebarWidth;
+                  }
+                }
+              },
+              onHorizontalDragEnd: handleDragEnd,
+              child: Container(
+                width: 20.0,
+                color: Colors.transparent,
+              ),
+            ),
+          ),
+          // Right edge detector for opening the sidebar
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                if ((details.primaryDelta ?? 0) < 0) {
+                  if (_animationController.status ==
+                      AnimationStatus.dismissed) {
+                    setState(() {
+                      _isSidebarOnLeft = false;
+                    });
+                  }
+                  if (!_isSidebarOnLeft) {
+                    _animationController.value -=
+                        (details.primaryDelta ?? 0) / _sidebarWidth;
+                  }
+                }
+              },
+              onHorizontalDragEnd: handleDragEnd,
+              child: Container(
+                width: 20.0,
+                color: Colors.transparent,
+              ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {
           return Transform.scale(
-            scale: _animationController.value,
+            scale: 1.0 - _animationController.value,
             child: child,
           );
         },
         child: FloatingActionButton(
-          onPressed: () {
-            if (_animationController.isCompleted) {
-              _navigateToTasker();
-            }
-          },
+          onPressed: _navigateToTasker,
           child: const Icon(Icons.add, size: 30),
         ),
       ),
