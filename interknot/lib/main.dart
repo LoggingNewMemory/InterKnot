@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import 'settings.dart';
 import 'tasker.dart';
-import 'webclient.dart'; // Import the refactored webclient file
+import 'webclient.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -355,8 +355,6 @@ class _HomePageState extends State<HomePage>
               ),
             ),
           ),
-          // <<< MODIFICATION START >>>
-          // Animated and conditionally positioned FAB
           AnimatedBuilder(
             animation: _animationController,
             builder: (context, child) {
@@ -404,7 +402,6 @@ class _HomePageState extends State<HomePage>
               child: const Icon(Icons.add, size: 30),
             ),
           ),
-          // <<< MODIFICATION END >>>
         ],
       ),
     );
