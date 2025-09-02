@@ -3,9 +3,11 @@ import 'dart:io';
 import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import 'settings.dart';
@@ -14,6 +16,19 @@ import 'webclient.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize the flutter_downloader plugin
+  await FlutterDownloader.initialize(
+      debug: true, // Set to true for debugging download tasks
+      ignoreSsl: true);
+
+  // Proactively request permissions needed for WhatsApp Web
+  await [
+    Permission.camera,
+    Permission.microphone,
+    Permission.storage, // Or Permission.photos on iOS
+  ].request();
+
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   runApp(const MainApp());
 }
