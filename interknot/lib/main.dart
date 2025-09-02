@@ -76,14 +76,12 @@ class _HomePageState extends State<HomePage>
   final double _sidebarWidth = 71.0;
   final List<Task> _tasks = [];
 
-  // --- ADDED FOR EDGE-SWIPE FIX ---
-  final double _edgeDragWidth = 30.0; // The width of the edge area in pixels
-  bool _isEdgeDrag = false; // Flag to check if the drag started on the edge
-  // --------------------------------
-
   // --- State for managing the main content view ---
   WebClientArgs? _activeWebClient;
   InAppWebViewController? _webViewController;
+
+  // --- NEW: State for sidebar position ---
+  bool _isSidebarOnLeft = true;
 
   @override
   void initState() {
@@ -200,18 +198,29 @@ class _HomePageState extends State<HomePage>
   Widget build(BuildContext context) {
     return Scaffold(
       body: GestureDetector(
-        // --- UPDATED GESTURE LOGIC FOR OPENING AND CLOSING ---
-        onHorizontalDragStart: (details) {
-          _isEdgeDrag = details.globalPosition.dx < _edgeDragWidth;
-        },
+        // --- UPDATED: Bidirectional gesture logic ---
         onHorizontalDragUpdate: (details) {
-          if (_isEdgeDrag ||
-              _animationController.status != AnimationStatus.dismissed) {
+          // If sidebar is closed, determine direction from the first drag delta
+          if (_animationController.status == AnimationStatus.dismissed) {
+            // A tiny deadzone to prevent accidental triggers
+            if ((details.primaryDelta ?? 0).abs() > 1.0) {
+              setState(() {
+                _isSidebarOnLeft = (details.primaryDelta ?? 0) > 0;
+              });
+            }
+          }
+          // Update animation value based on the determined direction
+          if (_isSidebarOnLeft) {
             _animationController.value +=
+                (details.primaryDelta ?? 0) / _sidebarWidth;
+          } else {
+            // Invert delta for right-to-left swipe to move controller from 0 to 1
+            _animationController.value -=
                 (details.primaryDelta ?? 0) / _sidebarWidth;
           }
         },
         onHorizontalDragEnd: (details) {
+          // Snap open or closed based on how far it was dragged
           if (_animationController.status != AnimationStatus.dismissed &&
               _animationController.status != AnimationStatus.completed) {
             if (_animationController.value < 0.5) {
@@ -220,31 +229,48 @@ class _HomePageState extends State<HomePage>
               _animationController.forward();
             }
           }
-          _isEdgeDrag = false;
         },
         // --------------------------------------------------------
         child: Stack(
           children: [
-            Row(
-              children: [
-                _SideNavBar(
-                  onSettingsTap: _navigateToSettings,
-                  avatarPath: _avatarPath,
-                  onHomeTap: _showDashboard,
-                  onWebClientTap: _showWebClient,
-                ),
-                VerticalDivider(width: 1, color: Colors.grey[850]),
-              ],
+            // --- UPDATED: Dynamic sidebar placement ---
+            Align(
+              alignment: _isSidebarOnLeft
+                  ? Alignment.centerLeft
+                  : Alignment.centerRight,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!_isSidebarOnLeft)
+                    VerticalDivider(width: 1, color: Colors.grey[850]),
+                  _SideNavBar(
+                    onSettingsTap: _navigateToSettings,
+                    avatarPath: _avatarPath,
+                    onHomeTap: _showDashboard,
+                    onWebClientTap: _showWebClient,
+                  ),
+                  if (_isSidebarOnLeft)
+                    VerticalDivider(width: 1, color: Colors.grey[850]),
+                ],
+              ),
             ),
+            // --- UPDATED: Dynamic animation transform ---
             AnimatedBuilder(
               animation: _animationController,
               builder: (context, child) {
+                final slideAmount = _animationController.value * _sidebarWidth;
+                final angle = _animationController.value * math.pi / 12;
+
+                final transform = Matrix4.identity()
+                  ..setEntry(3, 2, 0.001) // 3D perspective
+                  ..translate(_isSidebarOnLeft ? slideAmount : -slideAmount)
+                  ..rotateY(_isSidebarOnLeft ? -angle : angle);
+
                 return Transform(
-                  transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.001)
-                    ..translate(_animationController.value * _sidebarWidth)
-                    ..rotateY(_animationController.value * -math.pi / 12),
-                  alignment: Alignment.centerLeft,
+                  transform: transform,
+                  alignment: _isSidebarOnLeft
+                      ? Alignment.centerLeft
+                      : Alignment.centerRight,
                   child: child,
                 );
               },
