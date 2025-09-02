@@ -236,7 +236,6 @@ class _HomePageState extends State<HomePage>
             animation: _animationController,
             builder: (context, child) {
               final slideAmount = _animationController.value * _sidebarWidth;
-              // <<< 1. RE-INTRODUCED 3D ANIMATION LOGIC >>>
               final angle = _animationController.value * math.pi / 12;
 
               final transform = Matrix4.identity()
@@ -302,7 +301,31 @@ class _HomePageState extends State<HomePage>
                           _webViewController = controller;
                         },
                       ),
-                // <<< 2. FAB REMOVED FROM INNER SCAFFOLD >>>
+                // <<< MODIFICATION: FAB MOVED HERE >>>
+                floatingActionButton: Builder(
+                  builder: (context) {
+                    final fab = FloatingActionButton(
+                      onPressed: _navigateToTasker,
+                      child: const Icon(Icons.add, size: 30),
+                    );
+
+                    if (_activeWebClient == null) {
+                      // On homepage, always visible
+                      return fab;
+                    } else {
+                      // On other pages, animate scale with sidebar
+                      return AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _animationController.value,
+                            child: fab,
+                          );
+                        },
+                      );
+                    }
+                  },
+                ),
               ),
             ),
           ),
@@ -356,35 +379,7 @@ class _HomePageState extends State<HomePage>
               ),
             ),
           ),
-          // <<< 3. ADDED FAB AS A NEW, INDEPENDENT LAYER IN THE STACK >>>
-          Positioned(
-            right: 16.0,
-            bottom: 16.0,
-            child: Builder(
-              builder: (context) {
-                final fab = FloatingActionButton(
-                  onPressed: _navigateToTasker,
-                  child: const Icon(Icons.add, size: 30),
-                );
-
-                if (_activeWebClient == null) {
-                  // On homepage, always visible
-                  return fab;
-                } else {
-                  // On other pages, animate scale with sidebar
-                  return AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _animationController.value,
-                        child: fab,
-                      );
-                    },
-                  );
-                }
-              },
-            ),
-          ),
+          // <<< MODIFICATION: FAB REMOVED FROM THE STACK >>>
         ],
       ),
     );
