@@ -190,14 +190,6 @@ class _HomePageState extends State<HomePage>
     _saveTasks();
   }
 
-  void _toggleSidebar() {
-    if (_animationController.isCompleted) {
-      _animationController.reverse();
-    } else {
-      _animationController.forward();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     void handleDragEnd(DragEndDetails details) {
@@ -277,10 +269,7 @@ class _HomePageState extends State<HomePage>
                         title: Text(_activeWebClient!.title),
                         backgroundColor: Colors.black,
                         elevation: 0,
-                        leading: IconButton(
-                          icon: const Icon(Icons.menu),
-                          onPressed: _toggleSidebar,
-                        ),
+                        automaticallyImplyLeading: false,
                         actions: [
                           IconButton(
                             icon: const Icon(Icons.refresh),
