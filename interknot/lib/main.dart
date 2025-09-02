@@ -301,31 +301,7 @@ class _HomePageState extends State<HomePage>
                           _webViewController = controller;
                         },
                       ),
-                // <<< MODIFICATION: FAB MOVED HERE >>>
-                floatingActionButton: Builder(
-                  builder: (context) {
-                    final fab = FloatingActionButton(
-                      onPressed: _navigateToTasker,
-                      child: const Icon(Icons.add, size: 30),
-                    );
-
-                    if (_activeWebClient == null) {
-                      // On homepage, always visible
-                      return fab;
-                    } else {
-                      // On other pages, animate scale with sidebar
-                      return AnimatedBuilder(
-                        animation: _animationController,
-                        builder: (context, child) {
-                          return Transform.scale(
-                            scale: _animationController.value,
-                            child: fab,
-                          );
-                        },
-                      );
-                    }
-                  },
-                ),
+                // <<< MODIFICATION: The FAB is completely removed from this sliding Scaffold
               ),
             ),
           ),
@@ -379,7 +355,52 @@ class _HomePageState extends State<HomePage>
               ),
             ),
           ),
-          // <<< MODIFICATION: FAB REMOVED FROM THE STACK >>>
+          // FAB positioned next to the sidebar
+          AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              // Calculate FAB position based on sidebar state and animation
+              double fabLeft;
+              double fabRight;
+
+              if (_isSidebarOnLeft) {
+                // When sidebar is on left, FAB goes to the right of it
+                fabLeft =
+                    _sidebarWidth + 16.0; // Right next to sidebar + margin
+                fabRight = double.infinity; // Don't constrain right side
+              } else {
+                // When sidebar is on right, FAB goes to the left of it
+                fabLeft = double.infinity; // Don't constrain left side
+                fabRight =
+                    _sidebarWidth + 16.0; // Right next to sidebar + margin
+              }
+
+              return Positioned(
+                bottom: 16.0,
+                left: fabLeft == double.infinity ? null : fabLeft,
+                right: fabRight == double.infinity ? null : fabRight,
+                child: Builder(
+                  builder: (context) {
+                    final fab = FloatingActionButton(
+                      onPressed: _navigateToTasker,
+                      child: const Icon(Icons.add, size: 30),
+                    );
+
+                    if (_activeWebClient == null) {
+                      // On homepage, always visible
+                      return fab;
+                    } else {
+                      // On other pages, animate scale with sidebar animation
+                      return Transform.scale(
+                        scale: _animationController.value,
+                        child: fab,
+                      );
+                    }
+                  },
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
