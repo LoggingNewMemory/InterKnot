@@ -46,9 +46,6 @@ class _WebClientViewState extends State<WebClientView> {
                 databaseEnabled: true,
                 useHybridComposition: true,
               ),
-              ios: IOSInAppWebViewOptions(
-                allowsInlineMediaPlayback: true,
-              ),
             ),
             gestureRecognizers: {
               Factory<VerticalDragGestureRecognizer>(
