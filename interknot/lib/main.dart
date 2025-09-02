@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -301,7 +302,6 @@ class _HomePageState extends State<HomePage>
                           _webViewController = controller;
                         },
                       ),
-                // <<< MODIFICATION: The FAB is completely removed from this sliding Scaffold
               ),
             ),
           ),
@@ -355,52 +355,56 @@ class _HomePageState extends State<HomePage>
               ),
             ),
           ),
-          // FAB positioned next to the sidebar
+          // <<< MODIFICATION START >>>
+          // Animated and conditionally positioned FAB
           AnimatedBuilder(
             animation: _animationController,
             builder: (context, child) {
-              // Calculate FAB position based on sidebar state and animation
-              double fabLeft;
-              double fabRight;
+              final screenWidth = MediaQuery.of(context).size.width;
+              const fabWidth = 56.0; // Default FAB size
+              const fabMargin = 16.0;
 
+              // Determine Target X Position (where it should be when sidebar is open)
+              final double targetX;
               if (_isSidebarOnLeft) {
-                // When sidebar is on left, FAB goes to the right of it
-                fabLeft =
-                    _sidebarWidth + 16.0; // Right next to sidebar + margin
-                fabRight = double.infinity; // Don't constrain right side
+                targetX = _sidebarWidth + fabMargin;
               } else {
-                // When sidebar is on right, FAB goes to the left of it
-                fabLeft = double.infinity; // Don't constrain left side
-                fabRight =
-                    _sidebarWidth + 16.0; // Right next to sidebar + margin
+                targetX = screenWidth - _sidebarWidth - fabMargin - fabWidth;
               }
 
-              return Positioned(
-                bottom: 16.0,
-                left: fabLeft == double.infinity ? null : fabLeft,
-                right: fabRight == double.infinity ? null : fabRight,
-                child: Builder(
-                  builder: (context) {
-                    final fab = FloatingActionButton(
-                      onPressed: _navigateToTasker,
-                      child: const Icon(Icons.add, size: 30),
-                    );
+              // Determine Start X Position (where it is when sidebar is closed)
+              final double startX;
+              if (_activeWebClient == null) {
+                // On homepage, it starts in the center
+                startX = (screenWidth - fabWidth) / 2;
+              } else {
+                // On web client, it "starts" at the target position, but is scaled up
+                startX = targetX;
+              }
 
-                    if (_activeWebClient == null) {
-                      // On homepage, always visible
-                      return fab;
-                    } else {
-                      // On other pages, animate scale with sidebar animation
-                      return Transform.scale(
-                        scale: _animationController.value,
-                        child: fab,
-                      );
-                    }
-                  },
+              // Interpolate the current position based on animation value
+              final currentX =
+                  lerpDouble(startX, targetX, _animationController.value);
+
+              // Determine the scale
+              final double scale =
+                  _activeWebClient == null ? 1.0 : _animationController.value;
+
+              return Positioned(
+                bottom: fabMargin,
+                left: currentX,
+                child: Transform.scale(
+                  scale: scale,
+                  child: child,
                 ),
               );
             },
+            child: FloatingActionButton(
+              onPressed: _navigateToTasker,
+              child: const Icon(Icons.add, size: 30),
+            ),
           ),
+          // <<< MODIFICATION END >>>
         ],
       ),
     );
