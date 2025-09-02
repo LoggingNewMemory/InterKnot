@@ -209,20 +209,37 @@ class _HomePageState extends State<HomePage>
           Align(
             alignment:
                 _isSidebarOnLeft ? Alignment.centerLeft : Alignment.centerRight,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!_isSidebarOnLeft)
-                  VerticalDivider(width: 1, color: Colors.grey[850]),
-                _SideNavBar(
-                  onSettingsTap: _navigateToSettings,
-                  avatarPath: _avatarPath,
-                  onHomeTap: _showDashboard,
-                  onWebClientTap: _showWebClient,
-                ),
-                if (_isSidebarOnLeft)
-                  VerticalDivider(width: 1, color: Colors.grey[850]),
-              ],
+            child: GestureDetector(
+              // THIS LINE IS THE FIX: It ensures this detector wins the gesture
+              // battle against the buttons inside it for horizontal drags.
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragUpdate: (details) {
+                if (_animationController.status != AnimationStatus.dismissed) {
+                  if (_isSidebarOnLeft) {
+                    _animationController.value +=
+                        (details.primaryDelta ?? 0) / _sidebarWidth;
+                  } else {
+                    _animationController.value -=
+                        (details.primaryDelta ?? 0) / _sidebarWidth;
+                  }
+                }
+              },
+              onHorizontalDragEnd: handleDragEnd,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!_isSidebarOnLeft)
+                    VerticalDivider(width: 1, color: Colors.grey[850]),
+                  _SideNavBar(
+                    onSettingsTap: _navigateToSettings,
+                    avatarPath: _avatarPath,
+                    onHomeTap: _showDashboard,
+                    onWebClientTap: _showWebClient,
+                  ),
+                  if (_isSidebarOnLeft)
+                    VerticalDivider(width: 1, color: Colors.grey[850]),
+                ],
+              ),
             ),
           ),
           AnimatedBuilder(
