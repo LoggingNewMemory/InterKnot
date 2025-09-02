@@ -249,18 +249,22 @@ class _HomePageState extends State<HomePage>
               );
             },
             child: GestureDetector(
-              onHorizontalDragUpdate: (details) {
-                if (_animationController.status != AnimationStatus.dismissed) {
-                  if (_isSidebarOnLeft) {
-                    _animationController.value +=
-                        (details.primaryDelta ?? 0) / _sidebarWidth;
-                  } else {
-                    _animationController.value -=
-                        (details.primaryDelta ?? 0) / _sidebarWidth;
-                  }
-                }
-              },
-              onHorizontalDragEnd: handleDragEnd,
+              onHorizontalDragUpdate: _activeWebClient != null
+                  ? null
+                  : (details) {
+                      if (_animationController.status !=
+                          AnimationStatus.dismissed) {
+                        if (_isSidebarOnLeft) {
+                          _animationController.value +=
+                              (details.primaryDelta ?? 0) / _sidebarWidth;
+                        } else {
+                          _animationController.value -=
+                              (details.primaryDelta ?? 0) / _sidebarWidth;
+                        }
+                      }
+                    },
+              onHorizontalDragEnd:
+                  _activeWebClient != null ? null : handleDragEnd,
               child: Scaffold(
                 backgroundColor: Colors.black,
                 appBar: _activeWebClient == null
