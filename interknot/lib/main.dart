@@ -80,7 +80,7 @@ class _HomePageState extends State<HomePage>
   WebClientArgs? _activeWebClient;
   InAppWebViewController? _webViewController;
 
-  // --- NEW: State for sidebar position ---
+  // --- State for sidebar position ---
   bool _isSidebarOnLeft = true;
 
   @override
@@ -198,29 +198,23 @@ class _HomePageState extends State<HomePage>
   Widget build(BuildContext context) {
     return Scaffold(
       body: GestureDetector(
-        // --- UPDATED: Bidirectional gesture logic ---
         onHorizontalDragUpdate: (details) {
-          // If sidebar is closed, determine direction from the first drag delta
           if (_animationController.status == AnimationStatus.dismissed) {
-            // A tiny deadzone to prevent accidental triggers
             if ((details.primaryDelta ?? 0).abs() > 1.0) {
               setState(() {
                 _isSidebarOnLeft = (details.primaryDelta ?? 0) > 0;
               });
             }
           }
-          // Update animation value based on the determined direction
           if (_isSidebarOnLeft) {
             _animationController.value +=
                 (details.primaryDelta ?? 0) / _sidebarWidth;
           } else {
-            // Invert delta for right-to-left swipe to move controller from 0 to 1
             _animationController.value -=
                 (details.primaryDelta ?? 0) / _sidebarWidth;
           }
         },
         onHorizontalDragEnd: (details) {
-          // Snap open or closed based on how far it was dragged
           if (_animationController.status != AnimationStatus.dismissed &&
               _animationController.status != AnimationStatus.completed) {
             if (_animationController.value < 0.5) {
@@ -230,10 +224,8 @@ class _HomePageState extends State<HomePage>
             }
           }
         },
-        // --------------------------------------------------------
         child: Stack(
           children: [
-            // --- UPDATED: Dynamic sidebar placement ---
             Align(
               alignment: _isSidebarOnLeft
                   ? Alignment.centerLeft
@@ -254,7 +246,6 @@ class _HomePageState extends State<HomePage>
                 ],
               ),
             ),
-            // --- UPDATED: Dynamic animation transform ---
             AnimatedBuilder(
               animation: _animationController,
               builder: (context, child) {
@@ -262,7 +253,7 @@ class _HomePageState extends State<HomePage>
                 final angle = _animationController.value * math.pi / 12;
 
                 final transform = Matrix4.identity()
-                  ..setEntry(3, 2, 0.001) // 3D perspective
+                  ..setEntry(3, 2, 0.001)
                   ..translate(_isSidebarOnLeft ? slideAmount : -slideAmount)
                   ..rotateY(_isSidebarOnLeft ? -angle : angle);
 
@@ -280,7 +271,7 @@ class _HomePageState extends State<HomePage>
                 child: Scaffold(
                   backgroundColor: Colors.black,
                   appBar: _activeWebClient == null
-                      ? null // No AppBar on the dashboard
+                      ? null
                       : AppBar(
                           title: Text(_activeWebClient!.title),
                           backgroundColor: Colors.black,
@@ -304,7 +295,6 @@ class _HomePageState extends State<HomePage>
                           onDelete: _deleteTask,
                         )
                       : WebClientView(
-                          // Use a ValueKey to ensure the widget state is reset when the URL changes
                           key: ValueKey(_activeWebClient!.url),
                           url: _activeWebClient!.url,
                           onWebViewCreated: (controller) {
@@ -317,9 +307,22 @@ class _HomePageState extends State<HomePage>
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToTasker,
-        child: const Icon(Icons.add, size: 30),
+      floatingActionButton: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _animationController.value,
+            child: child,
+          );
+        },
+        child: FloatingActionButton(
+          onPressed: () {
+            if (_animationController.isCompleted) {
+              _navigateToTasker();
+            }
+          },
+          child: const Icon(Icons.add, size: 30),
+        ),
       ),
     );
   }
