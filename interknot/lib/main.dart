@@ -130,7 +130,7 @@ class _HomePageState extends State<HomePage>
     setState(() {
       _activeWebClient = null;
     });
-    _animationController.reverse();
+    // Don't reverse animation here to keep FAB logic simple when navigating
   }
 
   void _showWebClient(String title, String url) {
@@ -251,14 +251,12 @@ class _HomePageState extends State<HomePage>
                 child: Material(
                   elevation: 8.0,
                   color: Colors.black,
-                  // REMOVED: borderRadius and clipBehavior properties
                   child: child,
                 ),
               );
             },
             child: GestureDetector(
               onHorizontalDragUpdate: (details) {
-                // This logic is for closing the sidebar by dragging the main content
                 if (_animationController.status != AnimationStatus.dismissed) {
                   if (_isSidebarOnLeft) {
                     _animationController.value +=
@@ -303,10 +301,33 @@ class _HomePageState extends State<HomePage>
                           _webViewController = controller;
                         },
                       ),
+                // <<< FAB IS MOVED HERE, TO THE INNER SCAFFOLD >>>
+                floatingActionButton: Builder(
+                  builder: (context) {
+                    final fab = FloatingActionButton(
+                      onPressed: _navigateToTasker,
+                      child: const Icon(Icons.add, size: 30),
+                    );
+
+                    if (_activeWebClient == null) {
+                      return fab;
+                    } else {
+                      return AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _animationController.value,
+                            child: fab,
+                          );
+                        },
+                      );
+                    }
+                  },
+                ),
               ),
             ),
           ),
-          // Left edge detector for opening the sidebar
+          // Left edge detector
           Align(
             alignment: Alignment.centerLeft,
             child: GestureDetector(
@@ -331,7 +352,7 @@ class _HomePageState extends State<HomePage>
               ),
             ),
           ),
-          // Right edge detector for opening the sidebar
+          // Right edge detector
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
@@ -358,19 +379,7 @@ class _HomePageState extends State<HomePage>
           ),
         ],
       ),
-      floatingActionButton: AnimatedBuilder(
-        animation: _animationController,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: 1.0 - _animationController.value,
-            child: child,
-          );
-        },
-        child: FloatingActionButton(
-          onPressed: _navigateToTasker,
-          child: const Icon(Icons.add, size: 30),
-        ),
-      ),
+      // <<< FAB IS REMOVED FROM HERE, THE OUTER SCAFFOLD >>>
     );
   }
 }
